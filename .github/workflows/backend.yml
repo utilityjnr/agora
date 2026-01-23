@@ -1,43 +1,46 @@
-name: Backend CI/CD Pipeline
+name: Backend CI
 
 on:
-    push: 
-        branches: [main, develop]
-        paths: 
-            - 'server/**'
-
-    pull_request:
-        branches: [ main, develop ]
-        paths:
-            - 'server/**'
+  push:
+    branches: ["main", "develop"]
+    paths:
+      - "server/**"
+  pull_request:
+    branches: ["main", "develop"]
+    paths:
+      - "server/**"
 
 jobs:
-  build:
+  test:
+    name: Build and Test
     runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: server
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Setup Rust
-        uses: actions-rs/toolchain@v1
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
-          profile: minimal
-          override: true
+          components: rustfmt, clippy
 
-      - name: Install Stellar CLI
-        run: |
-          curl -s https://get.stellar.org | bash
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: server -> target
 
       - name: Check formatting
         run: cargo fmt --all -- --check
-        working-directory: ./server
 
-      - name: Run contract tests
+      - name: Clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
+
+      - name: Run tests
         run: cargo test
-        working-directory: ./server
 
-      - name: Build contracts
+      - name: Build
         run: cargo build --release
-        working-directory: ./server
