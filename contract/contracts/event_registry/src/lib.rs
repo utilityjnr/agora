@@ -6,7 +6,7 @@ use crate::events::{
     ProposalApprovedEvent, ProposalCreatedEvent, ProposalExecutedEvent, RegistryUpgradedEvent,
     ThresholdUpdatedEvent,
 };
-use crate::types::{EventInfo, MultiSigConfig, PaymentInfo, Proposal, ProposalType};
+use crate::types::{EventInfo, MultiSigConfig, PaymentInfo, Proposal, ProposalType, TicketTier};
 use soroban_sdk::{contract, contractimpl, Address, BytesN, Env, Map, String, Vec};
 
 pub mod error;

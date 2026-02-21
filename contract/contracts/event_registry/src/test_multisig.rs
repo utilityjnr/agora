@@ -1,5 +1,3 @@
-#![cfg(test)]
-
 use crate::{EventRegistry, EventRegistryClient};
 use soroban_sdk::{testutils::Address as _, testutils::Ledger, Address, Env};
 

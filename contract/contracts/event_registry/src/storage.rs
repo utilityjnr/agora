@@ -135,7 +135,7 @@ pub fn get_active_proposals(env: &Env) -> Vec<u64> {
 
 /// Removes a proposal from the active list (when executed or expired).
 pub fn remove_from_active_proposals(env: &Env, proposal_id: u64) {
-    let mut active_proposals: Vec<u64> = get_active_proposals(env);
+    let active_proposals: Vec<u64> = get_active_proposals(env);
     let mut new_proposals = Vec::new(env);
 
     for id in active_proposals.iter() {

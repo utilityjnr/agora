@@ -1,4 +1,4 @@
-use soroban_sdk::{contracttype, Address, Map, String};
+use soroban_sdk::{contracttype, Address, Map, String, Vec};
 
 /// Represents a ticket tier with its own pricing and supply
 #[contracttype]
