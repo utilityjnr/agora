@@ -19,6 +19,7 @@ pub enum EventRegistryError {
     TierLimitExceedsMaxSupply = 13,
     TierNotFound = 14,
     TierSupplyExceeded = 15,
+    SupplyUnderflow = 16,
 }
 
 impl core::fmt::Display for EventRegistryError {
@@ -54,6 +55,9 @@ impl core::fmt::Display for EventRegistryError {
             }
             EventRegistryError::TierSupplyExceeded => {
                 write!(f, "Tier has reached its maximum supply")
+            }
+            EventRegistryError::SupplyUnderflow => {
+                write!(f, "Supply counter underflow")
             }
         }
     }

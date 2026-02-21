@@ -230,6 +230,7 @@ fn test_register_event_success() {
             price: 5000000,
             tier_limit: 100,
             current_sold: 0,
+            is_refundable: true,
         },
     );
 
@@ -608,6 +609,7 @@ fn test_increment_inventory_success() {
             price: 5000000,
             tier_limit: 10,
             current_sold: 0,
+            is_refundable: true,
         },
     );
 
@@ -668,6 +670,7 @@ fn test_increment_inventory_max_supply_exceeded() {
             price: 5000000,
             tier_limit: 2,
             current_sold: 0,
+            is_refundable: true,
         },
     );
 
@@ -723,6 +726,7 @@ fn test_increment_inventory_unlimited_supply() {
             price: 5000000,
             tier_limit: 1000,
             current_sold: 0,
+            is_refundable: true,
         },
     );
 
@@ -796,6 +800,7 @@ fn test_increment_inventory_inactive_event() {
             price: 5000000,
             tier_limit: 100,
             current_sold: 0,
+            is_refundable: true,
         },
     );
     client.register_event(
@@ -844,6 +849,7 @@ fn test_increment_inventory_persists_across_reads() {
             price: 5000000,
             tier_limit: 50,
             current_sold: 0,
+            is_refundable: true,
         },
     );
     client.register_event(
@@ -897,6 +903,7 @@ fn test_tier_limit_exceeds_max_supply() {
             price: 5000000,
             tier_limit: 60,
             current_sold: 0,
+            is_refundable: true,
         },
     );
     tiers.set(
@@ -906,6 +913,7 @@ fn test_tier_limit_exceeds_max_supply() {
             price: 10000000,
             tier_limit: 50,
             current_sold: 0,
+            is_refundable: true,
         },
     );
 
@@ -954,6 +962,7 @@ fn test_tier_not_found() {
             price: 5000000,
             tier_limit: 100,
             current_sold: 0,
+            is_refundable: true,
         },
     );
 
@@ -1003,6 +1012,7 @@ fn test_tier_supply_exceeded() {
             price: 10000000,
             tier_limit: 3,
             current_sold: 0,
+            is_refundable: true,
         },
     );
 
@@ -1057,6 +1067,7 @@ fn test_multiple_tiers_inventory() {
             price: 5000000,
             tier_limit: 50,
             current_sold: 0,
+            is_refundable: true,
         },
     );
     tiers.set(
@@ -1066,6 +1077,7 @@ fn test_multiple_tiers_inventory() {
             price: 10000000,
             tier_limit: 20,
             current_sold: 0,
+            is_refundable: true,
         },
     );
 

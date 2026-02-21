@@ -376,6 +376,71 @@ impl EventRegistry {
         Ok(())
     }
 
+    /// Decrements the current_supply counter for a given event and tier.
+    /// This function is restricted to calls from the authorized TicketPayment contract upon refund.
+    ///
+    /// # Arguments
+    /// * `event_id` - The event whose inventory to decrement.
+    /// * `tier_id` - The tier whose inventory to decrement.
+    ///
+    /// # Errors
+    /// * `UnauthorizedCaller` - If the invoker is not the registered TicketPayment contract.
+    /// * `EventNotFound` - If no event with the given ID exists.
+    /// * `TierNotFound` - If the tier does not exist.
+    /// * `SupplyUnderflow` - If decrementing would cause the supply to go below 0.
+    pub fn decrement_inventory(
+        env: Env,
+        event_id: String,
+        tier_id: String,
+    ) -> Result<(), EventRegistryError> {
+        let ticket_payment_addr =
+            storage::get_ticket_payment_contract(&env).ok_or(EventRegistryError::NotInitialized)?;
+        ticket_payment_addr.require_auth();
+
+        let mut event_info =
+            storage::get_event(&env, event_id.clone()).ok_or(EventRegistryError::EventNotFound)?;
+
+        // Get and update tier
+        let mut tier = event_info
+            .tiers
+            .get(tier_id.clone())
+            .ok_or(EventRegistryError::TierNotFound)?;
+
+        if tier.current_sold <= 0 {
+            return Err(EventRegistryError::SupplyUnderflow);
+        }
+
+        tier.current_sold = tier
+            .current_sold
+            .checked_sub(1)
+            .ok_or(EventRegistryError::SupplyUnderflow)?;
+
+        event_info.tiers.set(tier_id, tier);
+
+        if event_info.current_supply <= 0 {
+            return Err(EventRegistryError::SupplyUnderflow);
+        }
+
+        event_info.current_supply = event_info
+            .current_supply
+            .checked_sub(1)
+            .ok_or(EventRegistryError::SupplyUnderflow)?;
+
+        storage::store_event(&env, event_info.clone());
+
+        env.events().publish(
+            (crate::events::AgoraEvent::InventoryDecremented,),
+            crate::events::InventoryDecrementedEvent {
+                event_id,
+                new_supply: event_info.current_supply,
+                max_supply: event_info.max_supply,
+                timestamp: env.ledger().timestamp(),
+            },
+        );
+
+        Ok(())
+    }
+
     /// Upgrades the contract to a new WASM hash. Only callable by the administrator.
     /// Performs post-upgrade state verification to ensure critical storage is intact.
     pub fn upgrade(env: Env, new_wasm_hash: BytesN<32>) -> Result<(), EventRegistryError> {

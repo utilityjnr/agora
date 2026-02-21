@@ -12,6 +12,8 @@ pub struct TicketTier {
     pub tier_limit: i128,
     /// Current number of tickets sold for this tier
     pub current_sold: i128,
+    /// Indicates whether tickets in this tier can be refunded by the buyer
+    pub is_refundable: bool,
 }
 
 /// Represents information about an event in the registry.

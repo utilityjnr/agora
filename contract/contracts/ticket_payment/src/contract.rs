@@ -36,7 +36,18 @@ pub mod event_registry {
     pub trait EventRegistryInterface {
         fn get_event_payment_info(env: Env, event_id: String) -> PaymentInfo;
         fn get_event(env: Env, event_id: String) -> Option<EventInfo>;
-        fn increment_inventory(env: Env, event_id: String);
+        fn increment_inventory(env: Env, event_id: String, tier_id: String);
+        fn decrement_inventory(env: Env, event_id: String, tier_id: String);
+    }
+
+    #[soroban_sdk::contracttype]
+    #[derive(Clone, Debug, Eq, PartialEq)]
+    pub struct TicketTier {
+        pub name: String,
+        pub price: i128,
+        pub tier_limit: i128,
+        pub current_sold: i128,
+        pub is_refundable: bool,
     }
 
     #[soroban_sdk::contracttype]
@@ -51,6 +62,7 @@ pub mod event_registry {
         pub metadata_cid: String,
         pub max_supply: i128,
         pub current_supply: i128,
+        pub tiers: soroban_sdk::Map<String, TicketTier>,
     }
 }
 
@@ -200,7 +212,7 @@ impl TicketPaymentContract {
         }
 
         // 4. Increment inventory after successful payment
-        registry_client.increment_inventory(&event_id);
+        registry_client.increment_inventory(&event_id, &ticket_tier_id);
 
         // 5. Create payment record
         let payment = Payment {
@@ -265,6 +277,62 @@ impl TicketPaymentContract {
                 timestamp: env.ledger().timestamp(),
             },
         );
+    }
+
+    pub fn request_guest_refund(env: Env, payment_id: String) -> Result<(), TicketPaymentError> {
+        if !is_initialized(&env) {
+            panic!("Contract not initialized");
+        }
+
+        let mut payment =
+            get_payment(&env, payment_id.clone()).ok_or(TicketPaymentError::PaymentNotFound)?;
+
+        payment.buyer_address.require_auth();
+
+        if payment.status == PaymentStatus::Refunded || payment.status == PaymentStatus::Failed {
+            return Err(TicketPaymentError::InvalidPaymentStatus);
+        }
+
+        let event_registry_addr = get_event_registry(&env);
+        let registry_client = event_registry::Client::new(&env, &event_registry_addr);
+
+        let event_info = match registry_client.try_get_event(&payment.event_id) {
+            Ok(Ok(Some(info))) => info,
+            _ => return Err(TicketPaymentError::EventNotFound),
+        };
+
+        let tier = event_info
+            .tiers
+            .get(payment.ticket_tier_id.clone())
+            .ok_or(TicketPaymentError::TierNotFound)?;
+
+        // Check if refundable or if EVENT IS CANCELLED (is_active == false)
+        if !tier.is_refundable && event_info.is_active {
+            return Err(TicketPaymentError::TicketNotRefundable);
+        }
+
+        // Return ticket to inventory using the authorized contract interface
+        registry_client.decrement_inventory(&payment.event_id, &payment.ticket_tier_id);
+
+        let old_status = payment.status.clone();
+        payment.status = PaymentStatus::Refunded;
+        payment.confirmed_at = Some(env.ledger().timestamp());
+
+        store_payment(&env, payment);
+
+        // Emit confirmation event
+        env.events().publish(
+            (AgoraEvent::PaymentStatusChanged,),
+            PaymentStatusChangedEvent {
+                payment_id: payment_id.clone(),
+                old_status,
+                new_status: PaymentStatus::Refunded,
+                transaction_hash: String::from_str(&env, "refund"),
+                timestamp: env.ledger().timestamp(),
+            },
+        );
+
+        Ok(())
     }
 
     /// Returns the status and details of a payment.
